@@ -43,7 +43,8 @@ export function resolveEpisodeVideoUrl(
   camera: string,
 ) {
   const preferred = [
-    `videos/observation.images.${camera}.mp4`,
+    `observation.images.${camera}.mp4`,        // canonical flat naming (format v1)
+    `videos/observation.images.${camera}.mp4`,  // legacy layouts
     `videos/${camera}.mp4`,
   ]
   for (const key of preferred) {

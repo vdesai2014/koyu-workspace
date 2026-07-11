@@ -11,6 +11,10 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+# Plug `koyu ingest` into the koyu-cli umbrella command when both are installed.
+[project.entry-points."koyu.plugins"]
+ingest = "local_tool.__main__:main"
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"

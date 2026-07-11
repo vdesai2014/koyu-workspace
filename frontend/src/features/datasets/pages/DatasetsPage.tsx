@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAuth } from '../../auth/localAuth'
+import { Button } from '../../../components/ui/Button'
+import { Modal } from '../../../components/ui/Modal'
 import { listManifests } from '../../projects/api'
 import type { ManifestSummary } from '../../projects/types'
-import { deleteManifest, updateManifest, type ManifestPatchInput } from '../api'
+import {
+  deleteManifest,
+  fetchIngestConfig,
+  runIngest,
+  saveIngestConfig,
+  updateManifest,
+  type IngestConfig,
+  type ManifestPatchInput,
+} from '../api'
 import { DatasetCard } from '../DatasetCard'
 import { DatasetFormModal } from '../DatasetFormModal'
 
@@ -44,6 +54,69 @@ export function DatasetsPage() {
   const [activeManifest, setActiveManifest] = useState<ManifestSummary | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  // ingest: the armed folder is server state; only the last-result line is ours
+  const [ingestCfg, setIngestCfg] = useState<IngestConfig | null>(null)
+  const [ingesting, setIngesting] = useState(false)
+  const [ingestNote, setIngestNote] = useState<string | null>(null)
+  const [ingestOpen, setIngestOpen] = useState(false)
+  const [outboxDraft, setOutboxDraft] = useState('')
+  const [ingestError, setIngestError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchIngestConfig(getToken)
+      .then((cfg) => setIngestCfg(cfg))
+      .catch(() => setIngestCfg(null))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleIngest() {
+    if (!ingestCfg?.outbox) {
+      openIngestSettings()
+      return
+    }
+    setIngesting(true)
+    setIngestNote(null)
+    setError(null)
+    try {
+      const result = await runIngest(getToken)
+      const noun = result.count === 1 ? 'episode' : 'episodes'
+      setIngestNote(
+        result.count === 0
+          ? `Nothing to ingest in ${result.outbox}`
+          : `Ingested ${result.count} ${noun} from ${result.outbox}`
+          + (result.pending > 0 ? ` — ${result.pending} left behind (see server log)` : ''),
+      )
+      setIngestCfg((cfg) => (cfg ? { ...cfg, pending: result.pending } : cfg))
+      if (result.count > 0) await load(currentCursor)
+    } catch (err) {
+      setError((err as Error).message || 'Ingest failed.')
+    } finally {
+      setIngesting(false)
+    }
+  }
+
+  function openIngestSettings() {
+    setOutboxDraft(ingestCfg?.outbox ?? '')
+    setIngestError(null)
+    setIngestOpen(true)
+  }
+
+  async function handleSaveOutbox() {
+    const outbox = outboxDraft.trim()
+    if (!outbox) {
+      setIngestError('Enter the outbox folder the runtime records into (e.g. <runtime-dir>/data-recordings).')
+      return
+    }
+    try {
+      const cfg = await saveIngestConfig(outbox, getToken)
+      setIngestCfg(cfg)
+      setIngestOpen(false)
+      setIngestNote(null)
+    } catch (err) {
+      setIngestError((err as Error).message || 'Unable to save the ingest folder.')
+    }
+  }
 
   useEffect(() => {
     if (!autoDetected || !listRef.current) return
@@ -196,7 +269,25 @@ export function DatasetsPage() {
           <h1>Workspace Datasets</h1>
           <p className="projects-copy">Private and shared datasets in your workspace, ready to open in the viewer.</p>
         </div>
+        <div className="datasets-ingest-actions">
+          <Button onClick={() => void handleIngest()} disabled={ingesting}>
+            {ingesting
+              ? `Ingesting${ingestCfg && ingestCfg.pending > 0 ? ` ${ingestCfg.pending}` : ''}…`
+              : `Ingest${ingestCfg && ingestCfg.pending > 0 ? ` (${ingestCfg.pending})` : ''}`}
+          </Button>
+          <Button
+            variant="ghost"
+            className="datasets-ingest-gear"
+            onClick={openIngestSettings}
+            title={ingestCfg?.outbox ? `Ingest folder: ${ingestCfg.outbox}` : 'Set the ingest folder'}
+            aria-label="Ingest settings"
+          >
+            ⚙
+          </Button>
+        </div>
       </header>
+
+      {ingestNote ? <div className="datasets-ingest-note">{ingestNote}</div> : null}
 
       <div className="projects-toolbar">
         <div className="projects-tag-filter">
@@ -323,6 +414,45 @@ export function DatasetsPage() {
           onClose={closeForm}
           onSubmit={handleSubmit}
         />
+      ) : null}
+
+      {ingestOpen ? (
+        <Modal title="Ingest folder" onClose={() => setIngestOpen(false)}>
+          <form
+            className="project-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void handleSaveOutbox()
+            }}
+          >
+            <label>
+              Outbox to sweep
+              <input
+                value={outboxDraft}
+                onChange={(event) => setOutboxDraft(event.target.value)}
+                placeholder="<runtime-dir>/data-recordings"
+                autoFocus
+              />
+            </label>
+            <p className="datasets-ingest-hint">
+              The folder the runtime&apos;s data recorder commits episode bundles into.
+              {ingestCfg?.outbox ? (
+                ingestCfg.exists
+                  ? ` Currently armed: ${ingestCfg.outbox} (${ingestCfg.pending} pending).`
+                  : ` Currently armed: ${ingestCfg.outbox} — folder not found yet; it appears once the runtime records.`
+              ) : (
+                ' No folder armed yet.'
+              )}
+            </p>
+            {ingestError ? <div className="project-form-error">{ingestError}</div> : null}
+            <div className="project-form-actions">
+              <Button variant="secondary" onClick={() => setIngestOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save</Button>
+            </div>
+          </form>
+        </Modal>
       ) : null}
     </section>
   )

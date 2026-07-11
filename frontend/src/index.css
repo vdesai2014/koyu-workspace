@@ -1622,6 +1622,16 @@ select {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
+  /* the page is viewport-clamped (overflow:hidden); this list is the scroller.
+     min-height:0 lets a flex child shrink below content size — without it the
+     grid overflows invisibly and nothing scrolls. */
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  /* rows must never compress to fit the definite height: .project-card's
+     min-height:0 collapses the auto-row minimum, and Chrome will squash rows
+     and overpaint cards. max-content pins each row to its content. */
+  grid-auto-rows: max-content;
 }
 
 .projects-grid.projects-grid-single {
@@ -5471,4 +5481,367 @@ select {
 .modal-body-dataset .coupon-layout-compact .coupon-viewer,
 .modal-body-dataset .coupon-layout-compact .coupon-metrics {
   border-radius: var(--radius-sm);
+}
+
+/* ---- replicate button (template cards + template project pages) ---- */
+.replicate-btn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--copper, #b46e3c);
+  color: var(--copper, #b46e3c);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: .08em;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  align-self: flex-start;
+}
+.replicate-btn:hover { background: var(--copper, #b46e3c); color: #0a0a0a; }
+.replicate-btn-large { font-size: 13px; padding: 10px 20px; margin: 0 0 14px; }
+.project-replicate-row { display: flex; }
+
+.project-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.project-topbar .replicate-btn-large { margin: 0; }
+
+.replicate-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(2, 2, 2, 0.78);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.replicate-modal {
+  width: min(720px, 100%); max-height: 86vh; display: flex; flex-direction: column;
+  background: var(--black-raised, #121210); border: 1px solid var(--copper, #b46e3c);
+}
+.replicate-modal-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 18px 22px 12px; gap: 12px;
+}
+.replicate-modal-header h3 { font-size: 15px; }
+.replicate-modal-close {
+  background: none; border: none; color: var(--text-tertiary, #8a877d);
+  font-size: 15px; cursor: pointer; padding: 2px 6px;
+}
+.replicate-modal-close:hover { color: var(--text-primary, #eee); }
+.replicate-prompt {
+  margin: 0 22px; padding: 14px 16px; overflow: auto; flex: 1; min-height: 0;
+  background: #0a0a09; border: 1px solid var(--line-faint, #2a2a26);
+  font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;
+}
+.replicate-modal-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 22px 18px;
+}
+.replicate-modal-footer p { font-size: 11px; color: var(--text-tertiary, #8a877d); max-width: 46ch; }
+.replicate-modal-footer .replicate-btn-large { margin: 0; flex: none; }
+
+/* Datasets page — ingest actions */
+
+.datasets-ingest-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.datasets-ingest-gear {
+  padding-inline: 12px;
+  font-size: 14px;
+}
+
+.datasets-ingest-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--copper-dim);
+  background: var(--copper-ember);
+  border-radius: 6px;
+  color: var(--copper-white);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.datasets-ingest-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* ================================================================
+   Controls page — runtime telemetry + eval orchestration
+   ================================================================ */
+
+.controls-page {
+  padding: 40px 32px;
+  max-width: 1100px;
+}
+
+.controls-page h1 {
+  margin: 10px 0 24px;
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.controls-card {
+  background: var(--black-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.controls-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.controls-card-head h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.controls-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+}
+
+.controls-badge-running {
+  color: var(--copper-hot);
+  border-color: var(--copper-dim);
+  background: var(--copper-ember);
+}
+
+.controls-badge-stopped {
+  color: var(--text-primary);
+}
+
+.controls-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.controls-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.controls-facts dt {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  align-self: center;
+}
+
+.controls-facts dd {
+  margin: 0;
+  color: var(--text-primary);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.controls-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.controls-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.controls-muted {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.controls-feed {
+  border-top: 1px solid var(--line-faint);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.controls-feed-row {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.controls-card-wide {
+  grid-column: 1 / -1;
+}
+
+.controls-cams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 280px));
+  gap: 16px;
+}
+
+.controls-cam {
+  margin: 0;
+}
+
+.controls-cam img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--black-void);
+  transition: opacity 0.3s;
+}
+
+.controls-cam figcaption {
+  margin-top: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+}
+
+.controls-signals {
+  border-top: 1px solid var(--line-faint);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.controls-signal {
+  margin: 0;
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.controls-signal-label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  min-width: 48px;
+  align-self: center;
+}
+
+
+.controls-card-wide {
+  grid-column: 1 / -1;
+}
+
+.controls-cams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 280px));
+  gap: 16px;
+}
+
+.controls-cam {
+  margin: 0;
+}
+
+.controls-cam img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  image-rendering: pixelated;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--black-void);
+  transition: opacity 0.3s;
+}
+
+.controls-cam figcaption {
+  margin-top: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-secondary);
+}
+
+.controls-signals {
+  border-top: 1px solid var(--line-faint);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.controls-signal {
+  margin: 0;
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.controls-signal-label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  min-width: 48px;
+  align-self: center;
+}
+
+/* Datasets page — ingest actions */
+
+.datasets-ingest-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.datasets-ingest-gear {
+  padding-inline: 12px;
+  font-size: 14px;
+}
+
+.datasets-ingest-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--copper-dim);
+  background: var(--copper-ember);
+  border-radius: 6px;
+  color: var(--copper-white);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.datasets-ingest-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }

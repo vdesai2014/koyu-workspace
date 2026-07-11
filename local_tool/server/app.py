@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .deps import get_ctx, init_store
-from .routes import episodes, manifests, projects, runs, sync
+from .routes import episodes, ingest, manifests, projects, runs, sync
 
 
 def _state_file_path(home: Path) -> Path:
@@ -91,6 +91,7 @@ app.include_router(runs.router, prefix="/api")
 app.include_router(manifests.router, prefix="/api")
 app.include_router(episodes.router, prefix="/api")
 app.include_router(sync.router, prefix="/api")
+app.include_router(ingest.router, prefix="/api")
 
 
 @app.get("/api/health")

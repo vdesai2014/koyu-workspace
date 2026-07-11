@@ -35,9 +35,10 @@ from ..io import StoreError
 from ..models import RecordingContext
 from ..paths import episode_dir, episodes_root
 from .episodes import create_episode
-from .manifests import add_manifest_episodes
+from .manifests import add_manifest_episodes, list_manifest_episodes, update_manifest
 from .projects import StoreCtx, ensure_store_roots
 from .recording import ensure_manifest_for_recording
+from .run_manifests import add_run_manifest
 
 SUPPORTED_SCHEMA_VERSIONS = {1}
 
@@ -56,6 +57,7 @@ class Sidecar(BaseModel):
     record_hz: float | None = None
     features: dict = Field(default_factory=dict)
     encoding: dict = Field(default_factory=dict)
+    reward: float | None = None      # verdict merged at capture (runtime interfaces.md)
     task: str | None = None
     task_description: str | None = None
     requested_manifest: str | None = None    # manifest NAME — the filing intent
@@ -122,11 +124,39 @@ def ingest_bundle(ctx: StoreCtx, bundle: Path) -> Ingested:
         source_run_id=sidecar.source_run_id,
         source_checkpoint=sidecar.source_checkpoint,
         policy_name=sidecar.policy_name,
+        reward=sidecar.reward,
         created_at=sidecar.recorded_at,
     )
     if manifest_id is not None:
         add_manifest_episodes(ctx, manifest_id, [episode_id])
+        _refresh_rollup(ctx, manifest_id)
+        _link_source_run(ctx, manifest_id, sidecar.source_run_id)
     return Ingested(episode_id=episode_id, manifest_id=manifest_id, bundle=bundle.name)
+
+
+def _link_source_run(ctx: StoreCtx, manifest_id: str, run_id: str | None) -> None:
+    """Provenance closes the loop: an eval manifest links to the run whose
+    checkpoint produced its episodes, so the run's page shows its eval results.
+    The run id is carried opaquely from recording-context provenance and may
+    not exist in this store (foreign or deleted run) — skip loudly, not fatally."""
+    if not run_id:
+        return
+    try:
+        add_run_manifest(ctx, run_id, manifest_id)
+    except StoreError as exc:
+        print(f"[ingest] source-run link skipped ({run_id}): {exc}", flush=True)
+
+
+def _refresh_rollup(ctx: StoreCtx, manifest_id: str) -> None:
+    """Roll capture-time verdicts up into the manifest, same math as the rating
+    PATCH route — an eval manifest shows its success rate as episodes arrive,
+    not only after a manual re-rating."""
+    linked = list_manifest_episodes(ctx, manifest_id)
+    rated = [episode.reward for episode in linked if episode.reward is not None]
+    if rated:
+        update_manifest(ctx, manifest_id,
+                        success_rate=sum(rated) / len(rated),
+                        rated_episodes=len(rated))
 
 
 def _resolve_manifest(ctx: StoreCtx, sidecar: Sidecar) -> str | None:

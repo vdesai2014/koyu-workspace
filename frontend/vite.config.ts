@@ -17,6 +17,10 @@ export default defineConfig({
         target: 'ws://localhost:8765',
         ws: true,
       },
+      '/bridge': {
+        target: 'http://localhost:8765',
+        rewrite: (path) => path.replace(/^\/bridge/, ''),
+      },
     },
   },
 })

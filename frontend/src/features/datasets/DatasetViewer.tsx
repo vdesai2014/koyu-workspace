@@ -718,8 +718,21 @@ export function DatasetViewer({ manifestId, compact = false }: DatasetViewerProp
             <div className="coupon-meta-row"><span>FPS</span><span>{manifest.fps ?? '—'}</span></div>
             <div className="coupon-meta-row"><span>Episodes</span><span>{manifest.episode_count}</span></div>
             <div className="coupon-meta-row"><span>Cameras</span><span>{cameras.length}</span></div>
-            <div className="coupon-meta-row"><span>Features</span><span>{Object.keys(manifest.features).length}</span></div>
           </section>
+
+          {Object.keys(manifest.features).length > 0 ? (
+            <section className="coupon-metadata-section">
+              <h3>Features</h3>
+              {Object.entries(manifest.features).map(([key, spec]) => (
+                <div key={key} className="coupon-meta-row coupon-meta-row-feature">
+                  <span className="coupon-meta-mono" title={key}>{key}</span>
+                  <span className="coupon-meta-mono">
+                    {spec.dtype === 'video' ? 'video' : `[${spec.shape?.join(',') ?? '?'}]`}
+                  </span>
+                </div>
+              ))}
+            </section>
+          ) : null}
 
           {selectedEpisode ? (
             <section className="coupon-metadata-section">
@@ -799,19 +812,6 @@ export function DatasetViewer({ manifestId, compact = false }: DatasetViewerProp
             </section>
           ) : null}
 
-          {Object.keys(manifest.features).length > 0 ? (
-            <section className="coupon-metadata-section">
-              <h3>Features</h3>
-              {Object.entries(manifest.features).map(([key, spec]) => (
-                <div key={key} className="coupon-meta-row coupon-meta-row-feature">
-                  <span className="coupon-meta-mono" title={key}>{key}</span>
-                  <span className="coupon-meta-mono">
-                    {spec.dtype === 'video' ? 'video' : `[${spec.shape?.join(',') ?? '?'}]`}
-                  </span>
-                </div>
-              ))}
-            </section>
-          ) : null}
         </aside>
       </div>
 

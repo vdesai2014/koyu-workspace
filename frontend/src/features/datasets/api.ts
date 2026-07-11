@@ -10,6 +10,61 @@ import type {
 
 type TokenGetter = (() => Promise<string | null>) | undefined
 
+export interface IngestConfig {
+  outbox: string | null
+  exists: boolean
+  pending: number
+}
+
+export interface IngestResult {
+  outbox: string
+  count: number
+  pending: number
+  ingested: { episode_id: string; manifest_id: string | null; bundle: string }[]
+}
+
+export async function fetchIngestConfig(getToken?: TokenGetter): Promise<IngestConfig> {
+  const response = await fetch(`${env.apiBase}/api/ingest/config`, {
+    headers: await buildAuthHeaders(getToken),
+  })
+  if (!response.ok) {
+    throw new Error(`Ingest config load failed with ${response.status}`)
+  }
+  return response.json() as Promise<IngestConfig>
+}
+
+export async function saveIngestConfig(outbox: string, getToken?: TokenGetter): Promise<IngestConfig> {
+  const response = await fetch(`${env.apiBase}/api/ingest/config`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(await buildAuthHeaders(getToken)),
+    },
+    body: JSON.stringify({ outbox }),
+  })
+  if (!response.ok) {
+    throw new Error(`Ingest config save failed with ${response.status}`)
+  }
+  return response.json() as Promise<IngestConfig>
+}
+
+export async function runIngest(getToken?: TokenGetter): Promise<IngestResult> {
+  const response = await fetch(`${env.apiBase}/api/ingest`, {
+    method: 'POST',
+    headers: await buildAuthHeaders(getToken),
+  })
+  if (!response.ok) {
+    let detail = `Ingest failed with ${response.status}`
+    try {
+      detail = ((await response.json()) as { detail?: string }).detail ?? detail
+    } catch {
+      // keep the generic message
+    }
+    throw new Error(detail)
+  }
+  return response.json() as Promise<IngestResult>
+}
+
 export interface ManifestPatchInput {
   name?: string
   description?: string | null
@@ -98,7 +153,7 @@ export function getEpisodeCameraList(detail: DatasetEpisodeDetail | null): strin
   }
 
   for (const path of Object.keys(detail.files)) {
-    const match = path.match(/^videos\/observation\.images\.([^.\/]+)\.mp4$/)
+    const match = path.match(/^(?:videos\/)?observation\.images\.([^.\/]+)\.mp4$/)
     if (match) cameras.add(match[1])
   }
 
@@ -158,7 +213,8 @@ export function resolveEpisodeVideoUrl(
   camera: string,
 ) {
   const candidates = [
-    `videos/observation.images.${camera}.mp4`,
+    `observation.images.${camera}.mp4`,        // canonical flat naming (format v1)
+    `videos/observation.images.${camera}.mp4`,  // legacy layouts
     `videos/${camera}.mp4`,
   ]
   for (const candidate of candidates) {

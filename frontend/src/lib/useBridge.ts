@@ -21,6 +21,7 @@ let wsReady = false
 const listeners = new Map<string, Set<(d: TopicData) => void>>()
 const activeSubs = new Map<string, { type_name: string; rate_hz: number; refcount: number }>()
 const natsListeners = new Map<string, Set<NatsCallback>>()
+const eventListeners = new Map<string, Set<(event_id: number) => void>>()
 const pendingRequests = new Map<string, PendingRequest>()
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 const pendingMessages: Record<string, unknown>[] = []
@@ -42,6 +43,9 @@ function connect() {
     for (const subject of natsListeners.keys()) {
       ws!.send(JSON.stringify({ type: 'nats-subscribe', subject }))
     }
+    for (const channel of eventListeners.keys()) {
+      ws!.send(JSON.stringify({ type: 'listen-event', channel }))
+    }
     while (pendingMessages.length > 0) {
       ws!.send(JSON.stringify(pendingMessages.shift()!))
     }
@@ -53,6 +57,9 @@ function connect() {
       if (msg.type === 'topic-data') {
         const cbs = listeners.get(msg.topic)
         if (cbs) cbs.forEach((cb) => cb(msg))
+      } else if (msg.type === 'event') {
+        const cbs = eventListeners.get(msg.channel)
+        if (cbs) cbs.forEach((cb) => cb(msg.event_id))
       } else if (msg.type === 'nats-message') {
         const cbs = natsListeners.get(msg.subject)
         if (cbs) cbs.forEach((cb) => cb(msg.payload))
@@ -154,6 +161,44 @@ export function useTopic<T = Record<string, unknown>>(topic: string, type_name: 
   }, [topic, type_name, rate_hz])
 
   return data
+}
+
+/** Fire a payload-less runtime event (a verb) on an events channel. */
+export function ringEvent(channel: string, event_id: number) {
+  ensureConnection()
+  send({ type: 'ring-event', channel, event_id })
+}
+
+function subscribeEvents(channel: string, cb: (event_id: number) => void) {
+  if (!eventListeners.has(channel)) eventListeners.set(channel, new Set())
+  const cbs = eventListeners.get(channel)!
+  const first = cbs.size === 0
+  cbs.add(cb)
+  ensureConnection()
+  if (first) send({ type: 'listen-event', channel })
+
+  return () => {
+    const next = eventListeners.get(channel)
+    if (!next) return
+    next.delete(cb)
+    if (next.size === 0) {
+      eventListeners.delete(channel)
+      send({ type: 'unlisten-event', channel })
+    }
+  }
+}
+
+/** Rolling feed of events fired on a channel since the page subscribed. */
+export function useEventFeed(channel: string, max = 12) {
+  const [feed, setFeed] = useState<{ event_id: number; at: number }[]>([])
+
+  useEffect(() => {
+    return subscribeEvents(channel, (event_id) => {
+      setFeed((prev) => [{ event_id, at: Date.now() }, ...prev].slice(0, max))
+    })
+  }, [channel, max])
+
+  return feed
 }
 
 export function useNatsSubject<T = unknown>(subject: string) {
