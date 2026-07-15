@@ -57,7 +57,7 @@ class Sidecar(BaseModel):
     record_hz: float | None = None
     features: dict = Field(default_factory=dict)
     encoding: dict = Field(default_factory=dict)
-    reward: float | None = None      # verdict merged at capture (runtime interfaces.md)
+    reward: float | None = None      # verdict merged at capture (runtime AGENTS.md)
     task: str | None = None
     task_description: str | None = None
     requested_manifest: str | None = None    # manifest NAME — the filing intent

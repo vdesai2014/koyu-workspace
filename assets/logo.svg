@@ -1,0 +1,13 @@
+<svg width="620" height="140" viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="618" height="138" rx="14" fill="#0a0a09" stroke="#1a1816" stroke-width="2"/>
+  <!-- branch glyph: runs are a tree; experiments branch sideways -->
+  <polyline points="52,100 52,40" fill="none" stroke="#E87F24" stroke-width="5" stroke-linecap="round"/>
+  <polyline points="52,72 92,72 92,40" fill="none" stroke="#E87F24" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="52" cy="100" r="8" fill="#E87F24"/>
+  <circle cx="52" cy="40" r="8" fill="#E87F24"/>
+  <circle cx="92" cy="40" r="8" fill="#6e645a"/>
+  <text x="132" y="90" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
+        font-size="52" font-weight="600" fill="#E87F24">koyu</text>
+  <text x="272" y="90" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
+        font-size="52" font-weight="400" fill="#6e645a">workspace</text>
+</svg>

@@ -130,16 +130,22 @@ def resolve_entity_path(
     *,
     validator,
 ) -> Path:
+    home_resolved = home.resolve()
+
+    def candidate_for(rel: str) -> Path | None:
+        candidate = (home / rel).resolve()
+        return candidate if home_resolved == candidate or home_resolved in candidate.parents else None
+
     catalog = load_catalog(home)
     rel = catalog.get(entity_type, {}).get(entity_id)
     if rel:
-        candidate = home / rel
-        if validator(candidate, entity_id):
+        candidate = candidate_for(rel)
+        if candidate is not None and validator(candidate, entity_id):
             return candidate
     catalog = rebuild_catalog(home)
     rel = catalog.get(entity_type, {}).get(entity_id)
     if rel:
-        candidate = home / rel
-        if validator(candidate, entity_id):
+        candidate = candidate_for(rel)
+        if candidate is not None and validator(candidate, entity_id):
             return candidate
     raise StoreError(f"{entity_type[:-1].title()} not found: {entity_id}", "NOT_FOUND")

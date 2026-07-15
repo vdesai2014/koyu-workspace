@@ -207,9 +207,16 @@ export function ProjectDetailPage({ workspace }: { workspace: boolean }) {
                 {copiedProjectId ? <span className="project-meta-copy-state">copied</span> : null}
               </span>
               {project.cloned_source_project_id ? (
-                <Link className="project-lineage-link" to={`/projects/${project.cloned_source_project_id}`}>
-                  cloned from {project.cloned_source_project_id.slice(0, 13)}
-                </Link>
+                // clone sources are always cloud projects (the sync engine's
+                // clone fetches from koyu.dev only), so lineage leaves the app
+                <a
+                  className="project-lineage-link"
+                  href={`https://koyu.dev/platform/projects/${project.cloned_source_project_id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  cloned from {project.cloned_source_project_id.slice(0, 13)} ↗
+                </a>
               ) : null}
             </div>
             <div className="project-hero-meta-right">

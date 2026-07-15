@@ -3,10 +3,11 @@ import json
 import pytest
 
 from local_tool.paths import episode_dir, episodes_root
-from local_tool.store.episodes import get_episode
+from local_tool.io import StoreError
+from local_tool.store.episodes import create_episode, get_episode
 from local_tool.store.ingest import sweep
 from local_tool.store.manifests import list_manifests
-from local_tool.store.projects import StoreCtx
+from local_tool.store.projects import StoreCtx, create_project
 
 
 def _sidecar(capture_id, manifest="teleop-cubes", mode="teleop", **over):
@@ -122,3 +123,18 @@ def test_sweep_skips_inflight_foreign_and_unsupported(ws):
     assert (outbox / "not-a-bundle").is_dir()
     assert bad.is_dir()
     assert malformed.is_dir()
+
+
+@pytest.mark.parametrize("name", ["../escaped", "/tmp/escaped", ".", "bad/name", "bad\\name"])
+def test_project_names_cannot_shape_paths(ws, name):
+    ctx, _ = ws
+
+    with pytest.raises(StoreError, match="Invalid entity name"):
+        create_project(ctx, name=name)
+
+
+def test_episode_ids_cannot_shape_paths(ws):
+    ctx, _ = ws
+
+    with pytest.raises(StoreError, match="Invalid episode id"):
+        create_episode(ctx, episode_id="../escaped", length=1)
