@@ -20,10 +20,16 @@
 //      arrive. features/datasets/TimeSeriesPlot.tsx is a ready renderer.
 //
 // 3. VIDEO (camera feeds)
-//      <img src={`/bridge/mjpeg/${topic}`} />
+//      <img src={`http://${location.hostname}:8765/mjpeg/${topic}`} />
 //      Multipart push stream, one connection per viewer, cap with ?fps=.
-//      /bridge/frame/<topic> returns a single JPEG snapshot. Feeds stream
-//      while the publisher publishes; late joiners get the cached last frame.
+//      /frame/<topic> on the same origin returns a single JPEG snapshot.
+//      Feeds stream while the publisher publishes; late joiners get the
+//      cached last frame.
+//      ALWAYS hit the bridge origin directly, never the vite /bridge proxy:
+//      browsers park aborted multipart streams in the app origin's
+//      6-connection pool, and a few Controls visits will stall every fetch
+//      and refresh on the app. A separate origin isolates video's pool.
+//      Also clear img.src on unmount so streams end with the page.
 //
 // 4. VERBS (buttons, estop, mode switches)
 //      ringEvent('arm/control', EVENT_ID)   fire a payload-less doorbell

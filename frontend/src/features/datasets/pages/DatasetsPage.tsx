@@ -64,26 +64,36 @@ export function DatasetsPage() {
   const [ingestError, setIngestError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchIngestConfig(getToken)
-      .then((cfg) => setIngestCfg(cfg))
-      .catch(() => setIngestCfg(null))
+    // poll while the page is open: pending counts change as the recorder's
+    // finalize jobs land bundles in the outbox, not only on navigation
+    let live = true
+    const load = () =>
+      fetchIngestConfig(getToken)
+        .then((cfg) => { if (live) setIngestCfg(cfg) })
+        .catch(() => { if (live) setIngestCfg(null) })
+    void load()
+    const timer = window.setInterval(load, 5000)
+    return () => { live = false; window.clearInterval(timer) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleIngest() {
     if (!ingestCfg?.outbox) {
-      openIngestSettings()
+      // arming lives behind the gear exclusively; the button just states facts
+      setIngestNote('No ingest folder armed. Use the settings gear to arm one.')
       return
     }
     setIngesting(true)
     setIngestNote(null)
     setError(null)
     try {
+      // sweep even when the count reads 0: a bundle may have landed since the
+      // last poll, and an empty sweep is what makes the message below true
       const result = await runIngest(getToken)
       const noun = result.count === 1 ? 'episode' : 'episodes'
       setIngestNote(
         result.count === 0
-          ? `Nothing to ingest in ${result.outbox}`
+          ? `No episodes available in ${result.outbox}`
           : `Ingested ${result.count} ${noun} from ${result.outbox}`
           + (result.pending > 0 ? ` — ${result.pending} left behind (see server log)` : ''),
       )
