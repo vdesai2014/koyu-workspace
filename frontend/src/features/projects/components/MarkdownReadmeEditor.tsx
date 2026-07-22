@@ -46,7 +46,9 @@ turndown.addRule('videoEmbed', {
 turndown.use(turndownGfm.tables)
 
 marked.setOptions({
-  breaks: true,
+  // breaks stays off so hard-wrapped README sources flow into paragraphs;
+  // editor Shift+Enter breaks survive as trailing-two-space markdown.
+  breaks: false,
   gfm: true,
 })
 

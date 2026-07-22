@@ -2845,6 +2845,18 @@ select {
   margin: 4px 0;
 }
 
+.project-readme-tiptap a {
+  color: var(--copper-white);
+  text-decoration: underline;
+  text-decoration-color: var(--copper-dim);
+  text-underline-offset: 3px;
+}
+
+.project-readme-tiptap a:hover {
+  color: var(--copper-hot);
+  text-decoration-color: var(--copper-hot);
+}
+
 .project-readme-tiptap code {
   padding: 1px 4px;
   background: var(--black-raised);
