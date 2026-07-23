@@ -763,6 +763,8 @@ def _cloud_episode_from_payload(payload: dict, manifest_id: str) -> LocalEpisode
     episode_payload = {
         "id": payload["id"],
         "length": payload["length"],
+        "recorded_at": payload["recorded_at"],
+        "record_hz": payload.get("record_hz"),
         "task": payload.get("task"),
         "task_description": payload.get("task_description"),
         "features": payload.get("features", {}),
@@ -783,8 +785,6 @@ def _cloud_episode_from_payload(payload: dict, manifest_id: str) -> LocalEpisode
         "policy_name": payload.get("policy_name"),
         "reward": payload.get("reward"),
     }
-    if payload.get("created_at") is not None:
-        episode_payload["created_at"] = payload["created_at"]
     return LocalEpisode.model_validate(episode_payload)
 
 
@@ -836,6 +836,8 @@ def _append_pull_linked_manifest_actions(ctx: StoreCtx, plan: SyncPlan) -> None:
                 episode.id,
                 {
                     "length": episode.length,
+                    "recorded_at": episode.recorded_at.isoformat(),
+                    "record_hz": episode.record_hz,
                     "task": episode.task,
                     "task_description": episode.task_description,
                     "features": dict(episode.features),
@@ -848,7 +850,6 @@ def _append_pull_linked_manifest_actions(ctx: StoreCtx, plan: SyncPlan) -> None:
                     "source_checkpoint": episode.source_checkpoint,
                     "policy_name": episode.policy_name,
                     "reward": episode.reward,
-                    "created_at": episode.created_at.isoformat(),
                 },
             )
         )

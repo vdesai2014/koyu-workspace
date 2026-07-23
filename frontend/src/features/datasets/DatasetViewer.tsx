@@ -537,7 +537,7 @@ export function DatasetViewer({ manifestId, compact = false }: DatasetViewerProp
                   </div>
                   <div className="coupon-episode-item-body">
                     <div className="coupon-episode-item-top">
-                      <strong>{formatEpisodeTimestamp(episode.created_at)}</strong>
+                      <strong>{formatEpisodeTimestamp(episode.recorded_at)}</strong>
                       <span>{episode.length}f</span>
                     </div>
                     <div className="coupon-episode-item-meta">
@@ -746,7 +746,7 @@ export function DatasetViewer({ manifestId, compact = false }: DatasetViewerProp
               </div>
               <div className="coupon-meta-row">
                 <span>Recorded</span>
-                <span>{formatEpisodeTimestamp(selectedEpisode.created_at)}</span>
+                <span>{formatEpisodeTimestamp(selectedEpisode.recorded_at)}</span>
               </div>
               <div className="coupon-meta-row"><span>Frames</span><span>{selectedEpisode.length}</span></div>
               {selectedEpisode.collection_mode ? (

@@ -97,6 +97,8 @@ def _episode_summary(episode) -> dict:
     return {
         "id": episode.id,
         "length": episode.length,
+        "recorded_at": episode.recorded_at,
+        "record_hz": episode.record_hz,
         "task": episode.task,
         "task_description": episode.task_description,
         "collection_mode": episode.collection_mode,
@@ -107,7 +109,6 @@ def _episode_summary(episode) -> dict:
         "reward": episode.reward,
         "features": episode.features,
         "size_bytes": episode.size_bytes,
-        "created_at": episode.created_at,
     }
 
 
@@ -248,12 +249,12 @@ def list_manifest_episodes(
         if task is not None:
             episodes = [episode for episode in episodes if episode.task == task]
         if cursor:
-            created_at, episode_id = _parse_cursor(cursor)
-            episodes = [episode for episode in episodes if (episode.created_at, episode.id) > (created_at, episode_id)]
+            recorded_at, episode_id = _parse_cursor(cursor)
+            episodes = [episode for episode in episodes if (episode.recorded_at, episode.id) > (recorded_at, episode_id)]
         next_cursor = None
         if len(episodes) > limit:
             tail = episodes[limit - 1]
-            next_cursor = _make_cursor(tail.created_at, tail.id)
+            next_cursor = _make_cursor(tail.recorded_at, tail.id)
             episodes = episodes[:limit]
         return {"episodes": [_episode_summary(episode) for episode in episodes], "next_cursor": next_cursor}
     except StoreError as e:
@@ -289,6 +290,8 @@ def batch_get_manifest_episodes(
             episodes.append({
                 "id": episode.id,
                 "length": episode.length,
+                "recorded_at": episode.recorded_at,
+                "record_hz": episode.record_hz,
                 "task": episode.task,
                 "task_description": episode.task_description,
                 "collection_mode": episode.collection_mode,
@@ -299,7 +302,6 @@ def batch_get_manifest_episodes(
                 "reward": episode.reward,
                 "features": episode.features,
                 "files": files,
-                "created_at": episode.created_at,
             })
         return {"episodes": episodes}
     except StoreError as e:
