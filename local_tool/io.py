@@ -20,7 +20,7 @@ class StoreError(Exception):
 
 def normalize_temporal_kwargs(kwargs: dict) -> dict:
     normalized = dict(kwargs)
-    for field in ("created_at", "updated_at"):
+    for field in ("created_at", "updated_at", "recorded_at"):
         value = normalized.get(field)
         if isinstance(value, str):
             normalized[field] = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -71,4 +71,3 @@ def remove_path(path: Path) -> None:
         path.rmdir()
     elif path.exists():
         path.unlink()
-

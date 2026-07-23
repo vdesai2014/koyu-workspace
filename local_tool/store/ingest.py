@@ -116,6 +116,8 @@ def ingest_bundle(ctx: StoreCtx, bundle: Path) -> Ingested:
         ctx,
         episode_id=episode_id,
         length=sidecar.length,
+        recorded_at=sidecar.recorded_at,
+        record_hz=sidecar.record_hz,
         task=sidecar.task,
         task_description=sidecar.task_description,
         features=sidecar.features,
@@ -125,7 +127,6 @@ def ingest_bundle(ctx: StoreCtx, bundle: Path) -> Ingested:
         source_checkpoint=sidecar.source_checkpoint,
         policy_name=sidecar.policy_name,
         reward=sidecar.reward,
-        created_at=sidecar.recorded_at,
     )
     if manifest_id is not None:
         add_manifest_episodes(ctx, manifest_id, [episode_id])

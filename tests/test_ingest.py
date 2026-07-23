@@ -61,6 +61,8 @@ def test_sweep_ingests_bundle(ws):
 
     episode = get_episode(ctx, result.episode_id)
     assert episode.length == 3 and episode.task == "pick" and episode.collection_mode == "teleop"
+    assert episode.recorded_at.isoformat() == "2026-06-10T12:00:00+00:00"
+    assert episode.record_hz == 30.0
     assert set(episode.files) == {"data.parquet", "videos/top.mp4", "capture.json"}
     assert all(meta["blake3"] for meta in episode.files.values())
     assert episode.size_bytes > 0
@@ -137,4 +139,9 @@ def test_episode_ids_cannot_shape_paths(ws):
     ctx, _ = ws
 
     with pytest.raises(StoreError, match="Invalid episode id"):
-        create_episode(ctx, episode_id="../escaped", length=1)
+        create_episode(
+            ctx,
+            episode_id="../escaped",
+            length=1,
+            recorded_at="2026-06-10T12:00:00+00:00",
+        )

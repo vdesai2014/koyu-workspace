@@ -26,6 +26,8 @@ def _episode_summary(episode) -> dict:
     return {
         "id": episode.id,
         "length": episode.length,
+        "recorded_at": episode.recorded_at,
+        "record_hz": episode.record_hz,
         "task": episode.task,
         "task_description": episode.task_description,
         "collection_mode": episode.collection_mode,
@@ -37,7 +39,6 @@ def _episode_summary(episode) -> dict:
         "features": episode.features,
         "size_bytes": episode.size_bytes,
         "manifest_ids": episode.manifest_ids,
-        "created_at": episode.created_at,
     }
 
 

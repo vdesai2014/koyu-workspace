@@ -51,6 +51,8 @@ class LocalManifest(BaseModel):
 class LocalEpisode(BaseModel):
     id: str
     length: int
+    recorded_at: datetime
+    record_hz: float | None = Field(default=None, gt=0)
     task: str | None = None
     task_description: str | None = None
     features: dict = Field(default_factory=dict)
@@ -63,7 +65,6 @@ class LocalEpisode(BaseModel):
     source_checkpoint: str | None = None
     policy_name: str | None = None
     reward: float | None = None
-    created_at: datetime = Field(default_factory=utc_now)
 
 
 class RecordingContext(BaseModel):

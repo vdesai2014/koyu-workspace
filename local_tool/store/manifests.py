@@ -40,7 +40,7 @@ def _resolve_manifest_episodes(ctx: StoreCtx, manifest: LocalManifest) -> list[L
             f"Manifest {manifest.id} references missing local episodes: {', '.join(missing)}",
             "NOT_FOUND",
         )
-    episodes.sort(key=lambda episode: (episode.created_at, episode.id))
+    episodes.sort(key=lambda episode: (episode.recorded_at, episode.id))
     return episodes
 
 

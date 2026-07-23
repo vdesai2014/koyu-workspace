@@ -250,6 +250,8 @@ def _sync_manifest_episodes(
             {
                 "id": episode.id,
                 "length": episode.length,
+                "recorded_at": episode.recorded_at.isoformat(),
+                "record_hz": episode.record_hz,
                 "task": episode.task or manifest.type,
                 "task_description": episode.task_description,
                 "collection_mode": episode.collection_mode,
@@ -635,6 +637,8 @@ def _execute_pull_plan(ctx: StoreCtx, plan: SyncPlan, config: CloudSyncConfig, r
             episodes.create_episode(
                 ctx,
                 length=action.payload["length"],
+                recorded_at=action.payload["recorded_at"],
+                record_hz=action.payload.get("record_hz"),
                 task=action.payload.get("task"),
                 task_description=action.payload.get("task_description"),
                 features=action.payload.get("features"),
@@ -647,7 +651,6 @@ def _execute_pull_plan(ctx: StoreCtx, plan: SyncPlan, config: CloudSyncConfig, r
                 files=action.payload.get("files"),
                 size_bytes=action.payload.get("size_bytes"),
                 episode_id=action.entity_id,
-                created_at=action.payload.get("created_at"),
             )
             created["episodes"] += 1
             reporter.event("metadata", "done", "create local episode", operation="create_local", entity_type="episode", entity_id=action.entity_id)
@@ -655,6 +658,8 @@ def _execute_pull_plan(ctx: StoreCtx, plan: SyncPlan, config: CloudSyncConfig, r
         else:
             episode_updates = {
                 "length": action.payload.get("length"),
+                "recorded_at": action.payload.get("recorded_at"),
+                "record_hz": action.payload.get("record_hz"),
                 "task": action.payload.get("task"),
                 "task_description": action.payload.get("task_description"),
                 "features": action.payload.get("features"),

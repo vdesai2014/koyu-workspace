@@ -8,7 +8,7 @@ from blake3 import blake3
 from ..catalog import rebuild_catalog, resolve_entity_path
 from ..ids import generate_id
 from ..io import StoreError, normalize_temporal_kwargs, read_model, write_model
-from ..models import LocalEpisode, utc_now
+from ..models import LocalEpisode
 from ..paths import episode_dir, episode_json, episodes_root
 from .projects import StoreCtx, ensure_store_roots
 
@@ -52,6 +52,8 @@ def create_episode(
     ctx: StoreCtx,
     *,
     length: int,
+    recorded_at,
+    record_hz: float | None = None,
     task: str | None = None,
     task_description: str | None = None,
     features: dict | None = None,
@@ -64,13 +66,14 @@ def create_episode(
     files: dict | None = None,
     size_bytes: int | None = None,
     episode_id: str | None = None,
-    created_at=None,
 ) -> LocalEpisode:
     ensure_store_roots(ctx)
     payload = normalize_temporal_kwargs(
         {
             "id": episode_id or generate_id("ep"),
             "length": length,
+            "recorded_at": recorded_at,
+            "record_hz": record_hz,
             "task": task,
             "task_description": task_description,
             "features": features or {},
@@ -83,7 +86,6 @@ def create_episode(
             "source_checkpoint": source_checkpoint,
             "policy_name": policy_name,
             "reward": reward,
-            "created_at": created_at or utc_now(),
         }
     )
     episode = LocalEpisode(**payload)
@@ -115,7 +117,7 @@ def update_episode(ctx: StoreCtx, episode_id: str, **updates) -> LocalEpisode:
     # Nullable fields the PATCH route is allowed to unset (e.g. reward -> null
     # when a user un-rates an episode). The bare `is not None` filter used
     # elsewhere would silently drop the null.
-    nullable_fields = {"reward", "task", "task_description"}
+    nullable_fields = {"reward", "task", "task_description", "record_hz"}
     clean = {
         key: value
         for key, value in updates.items()

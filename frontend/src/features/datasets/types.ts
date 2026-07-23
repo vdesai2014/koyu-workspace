@@ -39,6 +39,8 @@ export interface DatasetManifestRunListResponse {
 export interface DatasetEpisodeSummary {
   id: string
   length: number
+  recorded_at: string
+  record_hz: number | null
   task: string | null
   task_description: string | null
   collection_mode: string | null
@@ -49,7 +51,6 @@ export interface DatasetEpisodeSummary {
   reward: number | null
   features: Record<string, DatasetFeatureSpec>
   size_bytes: number
-  created_at: string
 }
 
 export interface DatasetEpisodePage {
@@ -60,6 +61,8 @@ export interface DatasetEpisodePage {
 export interface DatasetEpisodeDetail {
   id: string
   length: number
+  recorded_at: string
+  record_hz: number | null
   task: string | null
   task_description: string | null
   collection_mode: string | null
@@ -70,7 +73,6 @@ export interface DatasetEpisodeDetail {
   reward: number | null
   features: Record<string, DatasetFeatureSpec>
   files: Record<string, { url: string; size: number }>
-  created_at: string
 }
 
 export interface ParsedSeries {
